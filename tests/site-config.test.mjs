@@ -1,0 +1,10 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {resolveSiteConfig} from '../src/lib/site-config.mjs';
+const defaults={site:'https://jyb1018.github.io',base:'/portfolio',customDomain:null};
+test('Local default remains the requested portfolio path',()=>assert.deepEqual(resolveSiteConfig(defaults,{}),defaults));
+test('CI follows repository rename',()=>{for(const name of ['portfoilo','portfolio'])assert.equal(resolveSiteConfig(defaults,{GITHUB_REPOSITORY:`jyb1018/${name}`}).base,`/${name}`);});
+test('User-site repository is deployed at root',()=>assert.equal(resolveSiteConfig(defaults,{GITHUB_REPOSITORY:'jyb1018/jyb1018.github.io'}).base,'/'));
+test('Explicit deploy environment wins',()=>{const c=resolveSiteConfig(defaults,{GITHUB_REPOSITORY:'jyb1018/portfolio',SITE_URL:'https://example.org',BASE_PATH:'/'});assert.equal(c.site,'https://example.org');assert.equal(c.base,'/');});
+test('Custom domain is not overwritten by the repository name',()=>{const c=resolveSiteConfig({site:'https://example.org',base:'/',customDomain:'example.org'},{GITHUB_REPOSITORY:'jyb1018/portfolio'});assert.equal(c.site,'https://example.org');assert.equal(c.base,'/');});
+test('Malformed origins, repository names and domain conflicts fail',()=>{assert.throws(()=>resolveSiteConfig({...defaults,site:'https://x.example/a'},{}));assert.throws(()=>resolveSiteConfig(defaults,{GITHUB_REPOSITORY:'../escape'}));assert.throws(()=>resolveSiteConfig({...defaults,customDomain:'example.org'},{}));});

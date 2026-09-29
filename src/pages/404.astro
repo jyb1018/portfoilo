@@ -1,0 +1,7 @@
+---
+import profile from '../../content/profile.json';
+import settings from '../../site.config.json';
+import {notFound} from '../lib/render.mjs';
+const config={...settings,site:Astro.site?.origin||settings.site,base:import.meta.env.BASE_URL};
+---
+<Fragment set:html={notFound(profile,config)} />

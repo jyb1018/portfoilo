@@ -1,0 +1,9 @@
+---
+import {getCollection} from 'astro:content';
+import profile from '../../content/profile.json';
+import settings from '../../site.config.json';
+import {resume} from '../lib/render.mjs';
+const projects=(await getCollection('projects')).map(p=>p.data).sort((a,b)=>a.order-b.order);
+const config={...settings,site:Astro.site?.origin||settings.site,base:import.meta.env.BASE_URL};
+---
+<Fragment set:html={resume(profile,projects,config)} />

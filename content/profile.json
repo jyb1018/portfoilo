@@ -1,0 +1,36 @@
+{
+  "name": "정유빈",
+  "handle": "unen",
+  "role": "AI-Native Software Engineer",
+  "email": "jyb1018@gmail.com",
+  "github": "https://github.com/jyb1018",
+  "intro": "AI를 활용해 복잡한 현실의 문제를 빠르게 구조화하고, 실제로 동작하는 소프트웨어 시스템으로 구현합니다.",
+  "school": "건국대학교",
+  "major": "컴퓨터공학부",
+  "educationStatus": "재학",
+  "graduationYear": 2027,
+  "graduationMonth": 2,
+  "experience": {
+    "organization": "포커 토너먼트 운영사",
+    "role": "R&D Developer",
+    "period": "2026.06 – 2026.08",
+    "duration": "약 3개월",
+    "summary": "기존 개발 기반이 없는 환경에서 운영 플랫폼, 사용자 웹/API, 현장 디바이스 제어 시스템의 프론트엔드부터 백엔드·인프라까지 초기 기반을 구축했습니다."
+  },
+  "updated": "2026.09.29",
+  "metrics": [
+    {"value": "3", "unit": "개", "label": "실무 제품 기반 구축", "detail": "운영 · 사용자 · 디바이스"},
+    {"value": "4", "unit": "개 매장", "label": "MonitorControl 실제 사용", "detail": "매장 위치는 비공개"},
+    {"value": "38", "unit": "대", "label": "한 매장에서 운영한 기기", "detail": "4개 매장 전체 합계가 아닙니다"}
+  ],
+  "principles": [
+    {"title": "문제부터 구조화합니다", "text": "화면이나 기술 스택보다 업무 흐름, 상태의 소유권, 실패 조건을 먼저 정리합니다."},
+    {"title": "AI를 쓰되, 검증을 남깁니다", "text": "탐색과 구현에는 AI를 적극 활용하고, 승인 범위와 테스트 결과를 구분해 결과물을 검증합니다."},
+    {"title": "다음 변경까지 생각합니다", "text": "반복되는 검증과 연동 패턴은 공통화하고, 도메인 규칙은 프로젝트 안에 남깁니다."}
+  ],
+  "skillGroups": [
+    {"name": "웹 · 실시간", "items": ["React", "Node.js / Express", "TypeScript / JavaScript", "WebSocket / Socket.IO"]},
+    {"name": "데이터 · 배포", "items": ["PostgreSQL / Prisma", "Redis", "Docker", "AWS / GitHub Actions"]},
+    {"name": "AI · 디바이스", "items": ["Python / OpenCV", "OCR 파이프라인", "AI 개발 하네스", "Kotlin / Android"]}
+  ]
+}

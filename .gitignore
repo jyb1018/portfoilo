@@ -1,0 +1,12 @@
+node_modules/
+.astro/
+dist/
+dist-static/
+.playwright/
+test-results/
+.DS_Store
+.env
+.env.*
+!.env.example
+dist-root/
+preview.html

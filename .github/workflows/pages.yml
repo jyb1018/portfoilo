@@ -1,0 +1,97 @@
+name: Portfolio - verify and deploy
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      ASTRO_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install dependencies
+        run: |
+          if [ ! -f package-lock.json ]; then npm install --package-lock-only; fi
+          npm ci
+      - name: Verify content contracts
+        run: npm test
+      - name: Install Korean print fonts and browser
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y fonts-noto-cjk
+          npx playwright install --with-deps chromium
+      - name: Build Astro, regenerate PDF and check browser behavior
+        run: npm run release
+      - name: Check root-domain export
+        env:
+          SITE_URL: https://example.org
+          BASE_PATH: /
+        run: |
+          node scripts/build-static.mjs --out dist-root
+          AUDIT_DIR=dist-root node scripts/audit.mjs
+      - name: Upload verification and generated assets
+        uses: actions/upload-artifact@v4
+        with:
+          name: portfolio-verified
+          path: |
+            package-lock.json
+            public/resume.pdf
+            public/og.png
+            test-results/browser.json
+          if-no-files-found: error
+      - name: Upload Pages site
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+  generated:
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: portfolio-verified
+      - name: Preserve lockfile and generated PDF in the repository
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add package-lock.json public/resume.pdf public/og.png
+          if ! git diff --cached --quiet; then
+            git commit -m 'chore: 검증된 의존성 잠금 파일과 이력서 갱신'
+            git push origin HEAD:main
+          fi
+  deploy:
+    if: github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4
