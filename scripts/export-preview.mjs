@@ -3,6 +3,7 @@ import { readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { loadContent } from '../src/lib/content.mjs';
 import { basePath, esc } from '../src/lib/render.mjs';
+import {diagrams} from '../content/architecture/diagrams.mjs';
 const root = process.cwd();
 const dir = path.resolve(process.env.PREVIEW_DIR || 'dist-static');
 const { profile, projects, config } = await loadContent(root);
@@ -16,13 +17,18 @@ for (const [route, file] of routes) {
   pages[route] = { html: body[2], className: /class="([^"]*)"/.exec(body[1])?.[1] || '',
     title: /<title>(.*?)<\/title>/.exec(html)?.[1] || profile.name };
 }
-const styles = (await Promise.all(['site.css', 'resume.css'].map(f => readFile(path.join(dir, 'styles', f), 'utf8')))).join('\n');
+const styles = (await Promise.all(['site.css', 'resume.css', 'architecture.css'].map(f => readFile(path.join(dir, 'styles', f), 'utf8')))).join('\n');
 const app = await readFile(path.join(dir, 'app.js'), 'utf8');
 const pdf = (await readFile(path.join(dir, 'resume.pdf'))).toString('base64');
 const favicon = (await readFile(path.join(dir, 'favicon.svg'))).toString('base64');
-const json = JSON.stringify({ pages, base: basePath(config.base), pdf }).replace(/</g, '\\u003c');
+const assets={};
+for(const file of [...diagrams.map(d=>`diagrams/${d.id}.svg`),'brands/ATTRIBUTION.md']){
+  assets[basePath(config.base)+'/'+file]={type:file.endsWith('.svg')?'image/svg+xml':'text/plain;charset=utf-8',data:(await readFile(path.join(dir,file))).toString('base64')};
+}
+const json = JSON.stringify({ pages, base: basePath(config.base), pdf, assets }).replace(/</g, '\\u003c');
 const runtime = `(() => {
  const data=JSON.parse(document.getElementById('preview-data').textContent);
+ const assetUrls=Object.fromEntries(Object.entries(data.assets).map(([key,a])=>[key,URL.createObjectURL(new Blob([Uint8Array.from(atob(a.data),c=>c.charCodeAt(0))],{type:a.type}))]));
  let current='/', pdfUrl;
  const pdfBytes=Uint8Array.from(atob(data.pdf),c=>c.charCodeAt(0));
  pdfUrl=URL.createObjectURL(new Blob([pdfBytes],{type:'application/pdf'}));
@@ -40,6 +46,7 @@ const runtime = `(() => {
        a.href=pdfUrl;a.download='정유빈_이력서.pdf';
      }
    });
+   document.querySelectorAll('[src],[href]').forEach(el=>{for(const attr of ['src','href']){const url=assetUrls[el.getAttribute(attr)];if(url)el.setAttribute(attr,url);}});
    if(window.unenInitialize)window.unenInitialize();
    requestAnimationFrame(()=>{
      const target=anchor?document.getElementById(decodeURIComponent(anchor)):null;
@@ -57,7 +64,7 @@ const runtime = `(() => {
    if(location.hash===hash)render();else location.hash=hash;
  });
  window.addEventListener('hashchange',render);
- window.addEventListener('pagehide',()=>URL.revokeObjectURL(pdfUrl),{once:true});
+ window.addEventListener('pagehide',()=>{URL.revokeObjectURL(pdfUrl);Object.values(assetUrls).forEach(url=>URL.revokeObjectURL(url));},{once:true});
  render();
 })();`;
 const html = `<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="color-scheme" content="dark"><meta name="robots" content="noindex,nofollow"><title>${esc(profile.name)} (${esc(profile.handle)}) · 포트폴리오 미리보기</title><link rel="icon" href="data:image/svg+xml;base64,${favicon}"><style>${styles}</style></head><body><noscript>이 단일 파일 미리보기는 JavaScript가 필요합니다. 정식 정적 사이트는 JavaScript 없이도 내용을 읽을 수 있습니다.</noscript><script id="preview-data" type="application/json">${json}</script><script>${app}\n${runtime}</script></body></html>`;

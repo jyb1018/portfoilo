@@ -2,6 +2,8 @@ import {chromium} from 'playwright';
 import assert from 'node:assert/strict';
 import {readFile,mkdir,writeFile} from 'node:fs/promises';
 import path from 'node:path';
+import {execFileSync} from 'node:child_process';
+import {pathToFileURL} from 'node:url';
 import {startServer} from './serve.mjs';
 import {loadContent} from '../src/lib/content.mjs';
 import {href} from '../src/lib/render.mjs';
@@ -30,8 +32,8 @@ try{
    await page.locator('.architecture-text summary').click();assert.ok(await page.locator('.architecture-text').getAttribute('open')!==null);
    await page.locator('.architecture-text summary').click();
    const download=page.waitForEvent('download');await page.locator('.architecture-figure a[download]').click();assert.equal((await download).suggestedFilename(),`${d.id}-architecture.svg`);
-   if(d.id==='pokeros'&&width===1440)await page.locator('.architecture-map').screenshot({path:`${output}/case-section.png`});
-   if(d.id==='pokeros'&&width===360){await page.locator('.architecture-map-heading').scrollIntoViewIfNeeded();await page.screenshot({path:`${output}/mobile-section.png`});}
+   if(d.id==='pokeros'&&width===1440)await page.locator('.architecture-map').screenshot({path:`${output}/case-section.png`,style:'.site-header{visibility:hidden!important}'});
+   if(d.id==='pokeros'&&width===360){await region.evaluate(el=>el.scrollLeft=0);await page.locator('.architecture-map-heading').scrollIntoViewIfNeeded();await page.screenshot({path:`${output}/mobile-section.png`});}
    results.push(`${d.id}: ${width}px image, local scroll, text alternative and download PASS`);
   }
   await page.setViewportSize({width:1248,height:1020});
@@ -46,6 +48,12 @@ try{
   const response=await page.request.get(url);assert.deepEqual(await response.body(),await readFile(path.join(root,`diagrams/${d.id}.svg`)));
   results.push(`${d.id}: standalone SVG, ${d.nodes.length} nodes, label bounds and embedded marks PASS`);
  }
+ execFileSync(process.execPath,['scripts/export-preview.mjs'],{env:{...process.env,PREVIEW_DIR:root},stdio:'inherit'});
+ await page.goto(pathToFileURL(path.resolve('preview.html')).href+'#/projects/pokeros/');
+ await page.locator('.architecture-image').evaluate(async el=>{await el.decode();});
+ assert.ok(await page.locator('.architecture-image').evaluate(el=>el.naturalWidth===1248&&el.src.startsWith('blob:')));
+ assert.ok((await page.locator('.architecture-figure a[download]').getAttribute('href')).startsWith('blob:'));
+ results.push('Single-file preview: embedded diagram, stylesheet and download PASS');
  assert.deepEqual(errors,[]);assert.deepEqual(external,[]);
  await writeFile(`${output}/report.json`,JSON.stringify({results,pageErrors:errors,externalRequests:external},null,2));
  console.log(`${results.length} architecture browser checks passed; no external image requests.`);

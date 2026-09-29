@@ -59,6 +59,7 @@ jobs:
             public/diagrams/
             test-results/browser.json
             test-results/architecture/
+            preview.html
           if-no-files-found: error
       - name: Upload Pages site
         if: github.event_name != 'pull_request'
